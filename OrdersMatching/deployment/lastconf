@@ -1,0 +1,11 @@
+port 26379
+
+dir /tmp
+
+sentinel resolve-hostnames yes
+sentinel quorum 1
+sentinel monitor redismaster redis-master 6379 2
+sentinel down-after-milliseconds redis-master 1000
+sentinel parallel-syncs redis-master 1
+sentinel failover-timeout redis-master 1000
+

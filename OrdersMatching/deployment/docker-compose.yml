@@ -1,0 +1,124 @@
+version: "3.7"
+services:
+  mysql:
+    image: mysql:8.0
+    ports:
+      - "3307:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "22181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    ports:
+      - "29092:29092"
+
+  redis-master:
+    image: redis
+    volumes:
+      - "/docker-service-data/master:/data"
+      - /redis-docker/redis.conf:/etc/redis.conf
+    command: redis-server /etc/redis.conf
+    ports:
+      - 6379:6379
+    deploy:
+      mode: replicated
+      replicas: 1
+      endpoint_mode: vip
+      placement:
+        constraints: [node.role == manager]
+    networks:
+      - redis-net
+
+  redis-slave:
+    image: redis
+    volumes:
+      - "/docker-service-data/slave:/data"
+      - /redis-docker/redis.conf:/etc/redis.conf
+    command: redis-server /etc/redis.conf --slaveof redis-master 6379
+    ports:
+      - 6380:6379
+    deploy:
+      mode: replicated
+      endpoint_mode: vip
+      placement:
+        constraints: [node.role == worker]
+    networks:
+      - redis-net
+
+  redis-slave-1:
+    image: redis
+    volumes:
+      - "/docker-service-data/slave:/data"
+      - /redis-docker/redis.conf:/etc/redis.conf
+    command: redis-server /etc/redis.conf --slaveof redis-master 6379
+    ports:
+      - 6381:6379
+    deploy:
+      mode: replicated
+      endpoint_mode: vip
+      placement:
+        constraints: [node.role == worker]
+    networks:
+      - redis-net
+
+  redis-sentinel-1:
+    image: redis
+    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
+    volumes:
+          - ./sentinel.conf:/usr/local/etc/redis/sentinel.conf
+    deploy:
+      mode: replicated
+      endpoint_mode: vip
+    ports:
+      - 26384:26379
+    depends_on:
+      - redis-master
+      - redis-slave
+      - redis-slave-1
+    networks:
+      - redis-net
+
+  redis-sentinel-2:
+    image: redis
+    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
+    volumes:
+          - ./sentinel.conf:/usr/local/etc/redis/sentinel.conf
+    deploy:
+      mode: replicated
+      endpoint_mode: vip
+    ports:
+      - 26385:26379
+    depends_on:
+      - redis-master
+      - redis-slave
+      - redis-slave-1
+    networks:
+      - redis-net
+
+networks:
+  redis-net:
+    external: true
+
+
+
+
+
+
