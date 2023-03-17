@@ -1,7 +1,7 @@
 # OrdersMatching-service
 OrdersMatching service get some orders for shares and match their quantity in way which to send as small as possible exceeding shares to next service
 
-Problem definition \n
+Problem definition 
 ●	Orders matching means that when a client wants to buy shares from a given instrument and other clients want to sell the same amount of shares from the same instrument, we can match their orders.
  It's important because If we don't match orders the volume of orders we will send to next service will be times larger and process in the next service will be more slower
 ●	The main challenge is performance - we need to match orders as quickly as possible and, on request, be able to output exceeding shares and matching orders
